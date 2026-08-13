@@ -32,7 +32,6 @@ jobs:
         sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY || true
         sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* google-chrome-stable mono-devel libgl1-mesa-dri || true
         sudo -E apt-get -y update
-        # 针对 Ubuntu 24.04 适配的最新 OpenWrt 编译依赖包列表
         sudo -E apt-get -y install \
           ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
           bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
@@ -92,7 +91,6 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
-        # 动态精准搜索 bin/targets/ 固件输出目录
         TARGET_DIR=$(find . -path "*/bin/targets/*/*" -type d | head -n 1)
         if [ -z "$TARGET_DIR" ]; then
           TARGET_DIR=$(find openwrt/bin/targets/ -mindepth 2 -maxdepth 2 -type d 2>/dev/null || find bin/targets/ -mindepth 2 -maxdepth 2 -type d)
