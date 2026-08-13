@@ -60,7 +60,7 @@ function git_sparse_clone() {
   branch="$1" repourl="$2" && shift 2
   repodir=$(basename $repourl .git)
   rm -rf $repodir
-  git clone --depth=1 -b $branch --single-branch --filter=blob:none --sparse $repourl
+  git clone --depth=1 -b $branch --single-branch --filter=blob:none --sparse $repourl || return 0
   cd $repodir
   git sparse-checkout set $@
   for pkg in $@; do
@@ -87,17 +87,20 @@ git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-t
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata
-git clone --depth=1 https://github.com/nikkinikki-org/luci-app-nikki.git package/luci-app-nikki
+
+# 重点修复：规范 URL，并增加容错处理 || true
+git clone --depth=1 https://github.com/nikkinikki-org/luci-app-nikki package/luci-app-nikki 2>/dev/null || true
+
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # 引入 small-package 大合集
 rm -rf package/small-package
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package
 
-# 核心防撞处理：彻底剔除 small-package 中与上方独立克隆重复的软件包！
+# 核心防撞处理：仅在上方独立克隆成功时剔除 small-package 中重复的包
 rm -rf package/small-package/luci-theme-argon
 rm -rf package/small-package/luci-app-argon-config
-rm -rf package/small-package/luci-app-nikki
+[ -d "package/luci-app-nikki" ] && rm -rf package/small-package/luci-app-nikki
 rm -rf package/small-package/luci-app-netdata
 rm -rf package/small-package/luci-app-poweroff
 rm -rf package/small-package/tcping
