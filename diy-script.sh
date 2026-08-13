@@ -1,25 +1,71 @@
 #!/bin/bash
 
-# 修改默认IP
-# sed -i 's/192.168.1.1/10.0.0.1/g' package/base-files/files/bin/config_generate
+# =========================================================
+# 1. 基础网络、主机名、密码与默认 Shell 设置
+# =========================================================
+# 修改默认 LAN IP 为 192.168.30.1
+sed -i 's/192.168.1.1/192.168.30.1/g' package/base-files/files/bin/config_generate
+
+# 修改默认主机名为 Redmi-AX6
+sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate
+
+# 设置默认登录密码为: 123456789
+sed -i 's/root:::0:99999:7:::/root:\$1\$V44XV16Y\$221.A8ESL322338.309071:0:99999:7:::/g' package/base-files/files/etc/shadow 2>/dev/null || true
+if [ -f "package/lean/default-settings/files/zzz-default-settings" ]; then
+    sed -i '/CYXluq4wUaawER1/d' package/lean/default-settings/files/zzz-default-settings 2>/dev/null || true
+    sed -i 's/root:.*$/root:\$1\$V44XV16Y\$221.A8ESL322338.309071:17880:0:99999:7:::/g' package/lean/default-settings/files/zzz-default-settings 2>/dev/null || true
+fi
 
 # 更改默认 Shell 为 zsh
-# sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
+sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd
 
 # TTYD 免登录
-# sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config
+sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config 2>/dev/null || true
 
-# 移除要替换的包
+# =========================================================
+# 2. 设置 Wi-Fi 默认 SSID (OWrt-5G / OWrt-2.4G)
+# =========================================================
+mkdir -p package/base-files/files/etc/uci-defaults
+cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-wifi
+#!/bin/sh
+
+# 遍历所有 wireless 设备接口并设置默认 SSID
+for dev in $(uci show wireless | grep "=wifi-device" | cut -d'.' -f2 | cut -d'=' -f1); do
+    band=$(uci -q get wireless.${dev}.band)
+    htmode=$(uci -q get wireless.${dev}.htmode)
+
+    # 优先通过 band 或 htmode 识别 5G / 2.4G 频段
+    if [ "$band" = "5g" ] || echo "$htmode" | grep -qE "HE80|HE160|VHT"; then
+        uci -q set wireless.default_${dev}.ssid='OWrt-5G'
+    else
+        uci -q set wireless.default_${dev}.ssid='OWrt-2.4G'
+    fi
+    # 默认开启 Wi-Fi (取消禁用)
+    uci -q set wireless.${dev}.disabled='0'
+done
+
+uci commit wireless
+exit 0
+EOF
+chmod +x package/base-files/files/etc/uci-defaults/99-custom-wifi
+
+# 双重保险静态修改
+sed -i 's/ssid=ImmortalWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
+sed -i 's/ssid=OpenWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
+
+# =========================================================
+# 3. 清理 Feed 中可能冲突的旧软件包
+# =========================================================
 rm -rf feeds/packages/net/mosdns
 rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/packages/net/smartdns
 rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/themes/luci-theme-netgear
 rm -rf feeds/luci/applications/luci-app-mosdns
 rm -rf feeds/luci/applications/luci-app-netdata
-rm -rf feeds/luci/applications/luci-app-serverchan
 
-# Git稀疏克隆，只克隆指定目录到本地
+# =========================================================
+# 4. Git 稀疏克隆函数 (Sparse Clone)
+# =========================================================
 function git_sparse_clone() {
   branch="$1" repourl="$2" && shift 2
   git clone --depth=1 -b $branch --single-branch --filter=blob:none --sparse $repourl
@@ -29,98 +75,70 @@ function git_sparse_clone() {
   cd .. && rm -rf $repodir
 }
 
-# 添加额外插件
-git clone --depth=1 https://github.com/kongfl888/luci-app-adguardhome package/luci-app-adguardhome
-git clone --depth=1 -b openwrt-18.06 https://github.com/tty228/luci-app-wechatpush package/luci-app-serverchan
-git clone --depth=1 https://github.com/ilxp/luci-app-ikoolproxy package/luci-app-ikoolproxy
-git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
-git clone --depth=1 https://github.com/destan19/OpenAppFilter package/OpenAppFilter
-git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata
-git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser luci-app-ssr-mudb-server
-git_sparse_clone openwrt-18.06 https://github.com/immortalwrt/luci applications/luci-app-eqos
-# git_sparse_clone master https://github.com/syb999/openwrt-19.07.1 package/network/services/msd_lite
+# =========================================================
+# 5. 引入第三方核心仓库 (包含 daed / Argon / 实用工具)
+# =========================================================
+# kenzok8 small-package 包含 daed, dae, SmartDNS, MosDNS, Alist 等组件
+git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package
 
-# 科学上网插件
-#git clone --depth=1 -b main https://github.com/fw876/helloworld package/luci-app-ssr-plus
-#git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/openwrt-passwall
-#git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall
-#git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall2 package/luci-app-passwall2
-#git_sparse_clone master https://github.com/vernesong/OpenClash luci-app-openclash
-
-# Themes
-git clone --depth=1 -b 18.06 https://github.com/kiddin9/luci-theme-edge package/luci-theme-edge
-git clone --depth=1 -b 18.06 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
+# 替换最新的 Argon 主题及配置插件
+git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config
-git clone --depth=1 https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom package/luci-theme-infinityfreedom
-git_sparse_clone main https://github.com/haiibo/packages luci-theme-atmaterial luci-theme-opentomcat luci-theme-netgear
 
-# 更改 Argon 主题背景
-cp -f $GITHUB_WORKSPACE/images/bg1.jpg package/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
+# 实用小工具
+git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff
+git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata
+git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
-# 晶晨宝盒
-git_sparse_clone main https://github.com/ophub/luci-app-amlogic luci-app-amlogic
-sed -i "s|firmware_repo.*|firmware_repo 'https://github.com/haiibo/OpenWrt'|g" package/luci-app-amlogic/root/etc/config/amlogic
-# sed -i "s|kernel_path.*|kernel_path 'https://github.com/ophub/kernel'|g" package/luci-app-amlogic/root/etc/config/amlogic
-sed -i "s|ARMv8|ARMv8_PLUS|g" package/luci-app-amlogic/root/etc/config/amlogic
+# 引入 Nikki (luci-app-nikki) 及其核心依赖
+rm -rf package/luci-app-nikki
+git clone --depth=1 https://github.com/nikkinikki-org/luci-app-nikki.git package/luci-app-nikki
 
-# SmartDNS
-git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns
-git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns
-
-# msd_lite
-git clone --depth=1 https://github.com/ximiTech/luci-app-msd_lite package/luci-app-msd_lite
-git clone --depth=1 https://github.com/ximiTech/msd_lite package/msd_lite
-
-# MosDNS
-git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns
-
-# Alist
-git clone --depth=1 https://github.com/sbwml/luci-app-alist package/luci-app-alist
-
-# DDNS.to
-git_sparse_clone main https://github.com/linkease/nas-packages-luci luci/luci-app-ddnsto
-git_sparse_clone master https://github.com/linkease/nas-packages network/services/ddnsto
-
-# iStore
-git_sparse_clone main https://github.com/linkease/istore-ui app-store-ui
-git_sparse_clone main https://github.com/linkease/istore luci
-
-# 在线用户
-git_sparse_clone main https://github.com/haiibo/packages luci-app-onliner
-sed -i '$i uci set nlbwmon.@nlbwmon[0].refresh_interval=2s' package/lean/default-settings/files/zzz-default-settings
-sed -i '$i uci commit nlbwmon' package/lean/default-settings/files/zzz-default-settings
-chmod 755 package/luci-app-onliner/root/usr/share/onliner/setnlbw.sh
-
-# x86 型号只显示 CPU 型号
-sed -i 's/${g}.*/${a}${b}${c}${d}${e}${f}${hydrid}/g' package/lean/autocore/files/x86/autocore
-
+# =========================================================
+# 6. 系统个性化与修复补丁
+# =========================================================
 # 修改本地时间格式
-sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm
+sed -i 's/os.date()/os.date("%a %Y-%m-%d %H:%M:%S")/g' package/lean/autocore/files/*/index.htm 2>/dev/null || true
 
-# 修改版本为编译日期
+# 修改版本显示为当前编译日期
 date_version=$(date +"%y.%m.%d")
-orig_version=$(cat "package/lean/default-settings/files/zzz-default-settings" | grep DISTRIB_REVISION= | awk -F "'" '{print $2}')
-sed -i "s/${orig_version}/R${date_version} by Haiibo/g" package/lean/default-settings/files/zzz-default-settings
+if [ -f "package/lean/default-settings/files/zzz-default-settings" ]; then
+    orig_version=$(cat "package/lean/default-settings/files/zzz-default-settings" | grep DISTRIB_REVISION= | awk -F "'" '{print $2}')
+    sed -i "s/${orig_version}/R${date_version} for AX6/g" package/lean/default-settings/files/zzz-default-settings
+fi
 
-# 修复 hostapd 报错
-cp -f $GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch package/network/services/hostapd/patches/011-fix-mbo-modules-build.patch
+# 修正部分第三方 package Makefile 路径引用
+find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' {} 2>/dev/null || true
+find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' {} 2>/dev/null || true
+find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' {} 2>/dev/null || true
 
-# 修复 armv8 设备 xfsprogs 报错
-sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
+# 取消主题强制默认设置
+find package/luci-theme-*/* -type f -name '*luci-theme-*' -print -exec sed -i '/set luci.main.mediaurlbase/d' {} \; 2>/dev/null || true
 
-# 修改 Makefile
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/..\/..\/lang\/golang\/golang-package.mk/$(TOPDIR)\/feeds\/packages\/lang\/golang\/golang-package.mk/g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' {}
-find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' {}
-
-# 取消主题默认设置
-find package/luci-theme-*/* -type f -name '*luci-theme-*' -print -exec sed -i '/set luci.main.mediaurlbase/d' {} \;
-
-# 调整 V2ray服务器 到 VPN 菜单
-# sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/controller/*.lua
-# sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/model/cbi/v2ray_server/*.lua
-# sed -i 's/services/vpn/g' feeds/luci/applications/luci-app-v2ray-server/luasrc/view/v2ray_server/*.htm
-
+# =========================================================
+# 7. 刷新并安装所有包 Feeds
+# =========================================================
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+# =========================================================
+# 8. 清理冲突包与修复 eBPF / Coremark / Clang 源码硬链
+# =========================================================
+# 清理有冲突的内核/工具依赖项
+rm -rf package/kernel/bpf-headers
+rm -rf feeds/packages/kernel/bpf-headers
+rm -rf package/small-package/tcping
+
+# 清理 small-package 中存在 mkdir 缺失 -p 逻辑 Bug 的 coremark 源码包，自动回退使用官方源
+rm -rf package/small-package/coremark
+
+# 找到系统真实 clang 路径
+SYSTEM_CLANG=$(which clang || echo "/usr/bin/clang")
+
+# 强制替换 include/bpf.mk 源码中的 /invalid/clang 兜底路径
+if [ -f "include/bpf.mk" ]; then
+    sed -i "s|/invalid/clang|${SYSTEM_CLANG}|g" include/bpf.mk
+fi
+
+# 创建系统全局 Clang 软链接
+sudo ln -sf "$SYSTEM_CLANG" /usr/local/bin/clang 2>/dev/null || true
