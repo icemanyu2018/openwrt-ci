@@ -29,17 +29,18 @@ jobs:
         DEBIAN_FRONTEND: noninteractive
       run: |
         [ -n "$(docker images -q)" ] && docker rmi $(docker images -q) || true
-        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY || true
+        # 修复关键点：保留 /etc/apt/sources.list.d，只安全清理大文件目录
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android $AGENT_TOOLSDIRECTORY || true
         sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* google-chrome-stable mono-devel libgl1-mesa-dri || true
         sudo -E apt-get -y update
         sudo -E apt-get -y install \
           ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
           bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
           gcc-multilib g++-multilib git haveged help2man libc6-dev-i386 libglib2.0-dev \
-          libgmp-dev libltdl7-dev libmpc-dev libmpfr-dev libncurses-dev libreadline-dev \
+          libgmp-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libreadline-dev \
           libssl-dev libxml2-utils libz-dev lrzsz msmtp nano p7zip p7zip-full patch \
           pkgconf python3 python3-pip python3-ply python3-docutils qemu-utils rsync \
-          subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm dwarfsrcfiles
+          subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm
         sudo -E systemctl daemon-reload
         sudo -E apt-get -y autoremove --purge || true
         sudo -E apt-get -y clean
