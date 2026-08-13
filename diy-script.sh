@@ -140,9 +140,5 @@ if [ -f "include/bpf.mk" ]; then
     sed -i "s|/invalid/clang|${SYSTEM_CLANG}|g" include/bpf.mk
 fi
 
-# 创建系统全局以及 staging 工具链中的 Clang/LLVM 软链接
+# 创建系统全局 Clang 软链接
 sudo ln -sf "$SYSTEM_CLANG" /usr/local/bin/clang 2>/dev/null || true
-
-mkdir -p staging_dir/host/bin
-ln -sf "$SYSTEM_CLANG" staging_dir/host/bin/clang
-ln -sf "$SYSTEM_CLANG" staging_dir/host/bin/llvm-strap 2>/dev/null || true
