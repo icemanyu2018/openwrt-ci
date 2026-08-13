@@ -63,6 +63,13 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
+        # 核心拦截：在 install 之前清理官方 Feeds 中与 small-package 重叠的冲突包
+        rm -rf feeds/packages/net/mosdns || true
+        rm -rf feeds/packages/net/msd_lite || true
+        rm -rf feeds/packages/net/smartdns || true
+        rm -rf feeds/luci/themes/luci-theme-argon || true
+        rm -rf feeds/luci/applications/luci-app-mosdns || true
+        rm -rf feeds/luci/applications/luci-app-netdata || true
         ./scripts/feeds install -a
 
     - name: Download Package(下载软件包)
@@ -96,13 +103,13 @@ jobs:
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
-        TARGET_DIR=$(find . -path "*/bin/targets/*/*" -type d | head -n 1)
-        if [ -z "$TARGET_DIR" ]; then
-          TARGET_DIR=$(find openwrt/bin/targets/ -mindepth 2 -maxdepth 2 -type d 2>/dev/null || find bin/targets/ -mindepth 2 -maxdepth 2 -type d)
+        cd openwrt
+        TARGET_DIR=$(find bin/targets/ -mindepth 2 -maxdepth 2 -type d 2>/dev/null | head -n 1)
+        if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
+          rm -rf "$TARGET_DIR/packages" || true
+          echo "FIRMWARE=$GITHUB_WORKSPACE/openwrt/$TARGET_DIR" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
         fi
-        cd "$TARGET_DIR"
-        rm -rf packages
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
 
     - name: Upload Firmware To Artifact(将固件上传到Artifact)
       uses: actions/upload-artifact@v4
