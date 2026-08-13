@@ -116,10 +116,13 @@ find package/*/ -maxdepth 2 -path "*/Makefile" | xargs -i sed -i 's/PKG_SOURCE_U
 find package/luci-theme-*/* -type f -name '*luci-theme-*' -print -exec sed -i '/set luci.main.mediaurlbase/d' {} \; 2>/dev/null || true
 
 # =========================================================
-# 7. 刷新并安装所有包 Feeds
+# 7. 刷新并安全安装核心 Feeds (避开有问题的 telephony)
 # =========================================================
 ./scripts/feeds update -a
-./scripts/feeds install -a
+./scripts/feeds install -a -p packages
+./scripts/feeds install -a -p luci
+./scripts/feeds install -a -p routing
+./scripts/feeds install -a -p nss_packages 2>/dev/null || true
 
 # =========================================================
 # 8. 清理冲突包与修复 eBPF / Coremark / Clang 源码硬链
@@ -140,5 +143,9 @@ if [ -f "include/bpf.mk" ]; then
     sed -i "s|/invalid/clang|${SYSTEM_CLANG}|g" include/bpf.mk
 fi
 
-# 创建系统全局 Clang 软链接
+# 创建系统全局以及 staging 工具链中的 Clang/LLVM 软链接
 sudo ln -sf "$SYSTEM_CLANG" /usr/local/bin/clang 2>/dev/null || true
+
+mkdir -p staging_dir/host/bin
+ln -sf "$SYSTEM_CLANG" staging_dir/host/bin/clang
+ln -sf "$SYSTEM_CLANG" staging_dir/host/bin/llvm-strap 2>/dev/null || true
