@@ -1,93 +1,96 @@
-# =========================================================
-# 1. 目标平台与芯片架构 (红米 AX6 独占)
-# =========================================================
-CONFIG_TARGET_qualcommax=y
-CONFIG_TARGET_qualcommax_ipq807x=y
-# CONFIG_TARGET_MULTI_PROFILE is not set
-CONFIG_TARGET_DEVICE_qualcommax_ipq807x_DEVICE_redmi_ax6=y
-CONFIG_TARGET_DEVICE_PACKAGES_qualcommax_ipq807x_DEVICE_redmi_ax6="ipq-wifi-redmi_ax6"
-CONFIG_TARGET_PER_DEVICE_ROOTFS=y
+name: Build Redmi AX6 Firmware
 
-# =========================================================
-# 2. 高通 NSS 硬件加速驱动全家桶 (千兆转发，CPU 近乎 0 占用)
-# =========================================================
-CONFIG_PACKAGE_kmod-qca-nss-drv=y
-CONFIG_PACKAGE_kmod-qca-nss-ecm=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-qdisc=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-igs=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-match=y
-CONFIG_PACKAGE_kmod-nss-ifb=y
-CONFIG_NSS_DRV_BRIDGE_ENABLE=y
-CONFIG_NSS_DRV_VLAN_ENABLE=y
-CONFIG_NSS_DRV_SHAPER_ENABLE=y
-CONFIG_NSS_DRV_IGS_ENABLE=y
+on:
+  repository_dispatch:
+  workflow_dispatch:
 
-# =========================================================
-# 3. daed + dae (eBPF 架构透明代理) 及其内核依赖
-# =========================================================
-CONFIG_PACKAGE_daed=y
-CONFIG_PACKAGE_dae=y
-CONFIG_PACKAGE_luci-app-daed=y
-CONFIG_PACKAGE_luci-i18n-daed-zh-cn=y
+env:
+  REPO_URL: https://github.com/immortalwrt/immortalwrt
+  REPO_BRANCH: openwrt-24.10
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: .config
+  DIY_P1_SH: diy-part1.sh
+  DIY_P2_SH: diy-script.sh
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
 
-# eBPF 运行所需的关键内核与网络模块
-CONFIG_PACKAGE_kmod-ikconfig=y
-CONFIG_PACKAGE_libbpf=y
-CONFIG_PACKAGE_libelf=y
-CONFIG_PACKAGE_tc-tiny=y
-CONFIG_PACKAGE_ca-bundle=y
-CONFIG_PACKAGE_ca-certificates=y
-CONFIG_PACKAGE_kmod-tun=y
+jobs:
+  build:
+    runs-on: ubuntu-24.04
 
-# =========================================================
-# 4. Nikki (Mihomo / Clash Meta) 透明代理全家桶
-# =========================================================
-CONFIG_PACKAGE_luci-app-nikki=y
-CONFIG_PACKAGE_luci-i18n-nikki-zh-cn=y
-CONFIG_PACKAGE_nikki=y
-CONFIG_PACKAGE_mihomo=y
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
 
-# 核心网络依赖与内核模块 (保证 TPROXY 与 TUN 模式可用)
-CONFIG_PACKAGE_ip-full=y
-CONFIG_PACKAGE_ipset=y
-CONFIG_PACKAGE_kmod-nft-tproxy=y
+    - name: Initialization Environment(初始化环境)
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        [ -n "$(docker images -q)" ] && docker rmi $(docker images -q) || true
+        sudo rm -rf /usr/share/dotnet /etc/apt/sources.list.d /usr/local/lib/android $AGENT_TOOLSDIRECTORY || true
+        sudo -E apt-get -y purge azure-cli ghc* zulu* llvm* firefox google* dotnet* powershell openjdk* mongodb* moby* google-chrome-stable mono-devel libgl1-mesa-dri || true
+        sudo -E apt-get -y update
+        sudo -E apt-get -y install ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext gcc-multilib g++-multilib git haveged help2man intltool libc6-dev-i386 libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses5-dev libncursesw5-dev libreadline-dev libssl-dev libxml2-utils libz-dev lrzsz msmtp nano p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils qemu-utils rsync subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm pahole
+        sudo -E systemctl daemon-reload
+        sudo -E apt-get -y autoremove --purge || true
+        sudo -E apt-get -y clean
+        sudo timedatectl set-timezone "$TZ"
 
-# =========================================================
-# 5. 系统 Shell 扩展、主题与基础工具 (zsh + Argon + ttyd)
-# =========================================================
-CONFIG_PACKAGE_zsh=y
+    - name: Clone Source Code(克隆源码)
+      run: |
+        df -h $GITHUB_WORKSPACE
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf $GITHUB_WORKSPACE/openwrt openwrt
 
-# 语言与 Argon 主题
-CONFIG_LUCI_LANG_zh_Hans=y
-CONFIG_PACKAGE_luci-theme-argon=y
-CONFIG_PACKAGE_luci-app-argon-config=y
-CONFIG_PACKAGE_luci-i18n-argon-config-zh-cn=y
+    - name: Load Custom Configuration(加载自定义配置)
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P2_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+        [ -e $GITHUB_WORKSPACE/$CONFIG_FILE ] && cp $GITHUB_WORKSPACE/$CONFIG_FILE .config
 
-# TTYD 网页终端
-CONFIG_PACKAGE_luci-app-ttyd=y
-CONFIG_PACKAGE_luci-i18n-ttyd-zh-cn=y
-CONFIG_PACKAGE_ttyd=y
+    - name: Download Package(下载软件包)
+      id: package
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec rm -f {} \;
 
-# 核心压测工具与系统分析
-CONFIG_PACKAGE_coremark=y
-CONFIG_COREMARK_ENABLE_MULTITHREADING=y
-CONFIG_COREMARK_NUMBER_OF_THREADS=4
-CONFIG_COREMARK_OPTIMIZE_O3=y
+    - name: Compile Firmware(开始编译固件)
+      id: compile
+      run: |
+        cd openwrt
+        # 强制创建 staging_dir 目录并实时注入系统的 Clang 链接
+        mkdir -p staging_dir/host/bin
+        ln -sf $(which clang) staging_dir/host/bin/clang
+        ln -sf $(which llvm-strap) staging_dir/host/bin/llvm-strap 2>/dev/null || true
+        
+        echo -e "$(nproc) thread compile"
+        PATH="$(pwd)/staging_dir/host/bin:$PATH" \
+        KERNEL_BPF_CLANG="$(which clang)" \
+        CLANG="$(which clang)" \
+        make -j$(nproc) || make -j1 || make -j1 V=s
 
-CONFIG_PACKAGE_curl=y
-CONFIG_PACKAGE_htop=y
-CONFIG_PACKAGE_resolveip=y
-CONFIG_PACKAGE_openssh-sftp-server=y
+    - name: Check Space Usage(检查空间使用情况)
+      if: (!cancelled())
+      run: |
+        df -h
 
-# =========================================================
-# 6. 禁用/清理不需要的冗余模块 (USB 存储 / 多余无线固件)
-# =========================================================
-# CONFIG_PACKAGE_luci-app-passwall is not set
-# CONFIG_PACKAGE_kmod-usb-storage is not set
-# CONFIG_PACKAGE_kmod-fs-f2fs is not set
-# CONFIG_PACKAGE_kmod-fs-ntfs3 is not set
-# CONFIG_PACKAGE_block-mount is not set
-# CONFIG_PACKAGE_ath10k-firmware-qca9887-ct is not set
-# CONFIG_PACKAGE_ath11k-firmware-qcn9074 is not set
+    - name: Organize Files(整理文件)
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+
+    - name: Upload Firmware To Artifact(将固件上传到Artifact)
+      uses: actions/upload-artifact@v4
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_firmware_${{ env.DEVICE_NAME }}_${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE }}
