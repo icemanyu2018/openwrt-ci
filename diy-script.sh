@@ -21,7 +21,7 @@
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
-#!/sh
+#!/bin/sh
 
 # 1. 设置默认 root 密码为: 123456789
 shadow_entry='root:$1$V44XV16Y$221.A8ESL322338.309071:17880:0:99999:7:::'
