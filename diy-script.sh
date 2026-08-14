@@ -110,6 +110,10 @@ rm -rf package/small-package/tcping || true
 rm -rf package/small-package/coremark || true
 rm -rf package/small-package/vmlinux-btf || true
 
+# 彻底清除 dae / daed 中的 vmlinux-btf 和 bpf-headers 依赖定义
+find package/ -name "Makefile" -path "*/dae*/*" -exec sed -i 's/+vmlinux-btf//g' {} + 2>/dev/null || true
+find package/ -name "Makefile" -path "*/dae*/*" -exec sed -i 's/bpf-headers//g' {} + 2>/dev/null || true
+
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
 # =========================================================
