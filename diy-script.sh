@@ -3,33 +3,24 @@
 # =========================================================
 # 1. 基础网络、主机名与默认 Shell 设置
 # =========================================================
-# 修改默认 LAN IP 为 192.168.30.1
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.30.1/g' package/base-files/files/bin/config_generate || true
-
-# 修改默认主机名为 Redmi-AX6
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate || true
-
-# 更改默认 Shell 为 zsh
 [ -f "package/base-files/files/etc/passwd" ] && sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd 2>/dev/null || true
-
-# TTYD 免登录
 [ -f "feeds/packages/utils/ttyd/files/ttyd.config" ] && sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config 2>/dev/null || true
 
 # =========================================================
-# 2. 首次启动 UCI 自动配置 (设置密码: 123456789、Wi-Fi SSID)
+# 2. 首次启动 UCI 自动配置
 # =========================================================
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
 #!/bin/sh
 
-# 1. 设置默认 root 密码为: 123456789
 shadow_entry='root:$1$V44XV16Y$221.A8ESL322338.309071:17880:0:99999:7:::'
 if [ -f "/etc/shadow" ]; then
     sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
 fi
 
-# 2. 遍历所有 wireless 接口设置默认 SSID (OWrt-5G / OWrt-2.4G) 并开启 Wi-Fi
 if command -v uci >/dev/null 2>&1; then
     for section in $(uci show wireless 2>/dev/null | grep "=wifi-iface" | cut -d'.' -f2 | cut -d'=' -f1); do
         device=$(uci -q get wireless.${section}.device)
@@ -53,12 +44,11 @@ exit 0
 EOF
 chmod +x package/base-files/files/etc/uci-defaults/99-custom-setup || true
 
-# 静态双重保险修改 Wi-Fi 默认 SSID
 [ -f "package/kernel/mac80211/files/lib/wifi/mac80211.sh" ] && sed -i 's/ssid=ImmortalWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
 [ -f "package/kernel/mac80211/files/lib/wifi/mac80211.sh" ] && sed -i 's/ssid=OpenWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
 
 # =========================================================
-# 3. 安全稀疏克隆函数 (无需切换 cd 目录，彻底消除 Exit 1)
+# 3. 安全稀疏克隆函数
 # =========================================================
 function git_sparse_clone() {
   local branch="$1" repourl="$2" && shift 2
@@ -83,15 +73,16 @@ function git_sparse_clone() {
 # =========================================================
 # 4. 引入第三方核心仓库 & 解决包冲突
 # =========================================================
-# 清理可能已存在的旧文件夹
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/luci-app-nikki || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed || true
 
 # 独立克隆重点插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
-git clone --depth=1 https://github.com/nikkinikki-org/luci-app-nikki package/luci-app-nikki 2>/dev/null || true
+
+# 克隆 kenzok8/openwrt-daed
+git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
@@ -100,12 +91,11 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复与冲突的包（彻底清理 dae/vmlinux-btf 避免冲突）
+# 剔除 small-package 中重复与冲突的旧包
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
-[ -d "package/luci-app-nikki" ] && rm -rf package/small-package/luci-app-nikki || true
-[ -d "package/luci-app-netdata" ] && rm -rf package/small-package/luci-app-netdata || true
-[ -d "package/luci-app-poweroff" ] && rm -rf package/small-package/luci-app-poweroff || true
+rm -rf package/small-package/luci-app-netdata || true
+rm -rf package/small-package/luci-app-poweroff || true
 rm -rf package/small-package/tcping || true
 rm -rf package/small-package/coremark || true
 rm -rf package/small-package/vmlinux-btf || true
