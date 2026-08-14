@@ -21,7 +21,7 @@
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
-#!/bin/sh
+#!/sh
 
 # 1. 设置默认 root 密码为: 123456789
 shadow_entry='root:$1$V44XV16Y$221.A8ESL322338.309071:17880:0:99999:7:::'
@@ -100,7 +100,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复的包 (保证优先采用单独克隆的最新版)
+# 剔除 small-package 中重复与冲突的包
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 [ -d "package/luci-app-nikki" ] && rm -rf package/small-package/luci-app-nikki || true
@@ -108,6 +108,7 @@ rm -rf package/small-package/luci-app-argon-config || true
 [ -d "package/luci-app-poweroff" ] && rm -rf package/small-package/luci-app-poweroff || true
 rm -rf package/small-package/tcping || true
 rm -rf package/small-package/coremark || true
+rm -rf package/small-package/vmlinux-btf || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
