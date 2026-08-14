@@ -57,7 +57,15 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-        [ -e "$GITHUB_WORKSPACE/$CONFIG_FILE" ] && cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config || true
+        
+        # 强制检查配置文件是否存在，找不到直接抛出 Exit 1 终止流程
+        if [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ]; then
+          cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
+          echo "成功应用配置文件: $CONFIG_FILE"
+        else
+          echo "致命错误: 未在仓库根目录找到 $CONFIG_FILE 配置文件！"
+          exit 1
+        fi
 
     - name: Update & Install Feeds(更新并安装源)
       run: |
@@ -76,9 +84,21 @@ jobs:
       id: package
       run: |
         cd openwrt
-        # 关键强制覆盖：防止 feeds install 后 defconfig 将配置重置为 x86
-        [ -e "$GITHUB_WORKSPACE/$CONFIG_FILE" ] && cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config || true
+        # 再次强制覆盖，防止 feeds install 重置配置
+        cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
+        
         make defconfig
+        
+        # 核心卡点：检查 Target 是否依然为 x86，若异常则立刻终止
+        TARGET_BOARD=$(grep "CONFIG_TARGET_BOARD=" .config | cut -d'"' -f2)
+        echo "=========================================="
+        echo "当前生成的 Target 架构为: $TARGET_BOARD"
+        echo "=========================================="
+        if [ "$TARGET_BOARD" = "x86" ]; then
+          echo "致命错误: 配置未生效，系统退回到了 x86！请检查 IPQ807X-WIFI.config 中的 Target 设置！"
+          exit 1
+        fi
+
         make download -j8
         find dl -size -1024c -exec rm -f {} \;
 
@@ -115,7 +135,7 @@ jobs:
 
     - name: Upload Firmware To Artifact(将固件上传到Artifact)
       uses: actions/upload-artifact@v4
-      if: env.FIRMWARE != '' && !cancelled()
+      if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware_Redmi_AX6
-        path: ${{ env.FIRMWARE }}
+        path: openwrt/bin/targets/*/*
