@@ -100,12 +100,12 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复的包
+# 剔除 small-package 中重复的包 (保证优先采用单独克隆的最新版)
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 [ -d "package/luci-app-nikki" ] && rm -rf package/small-package/luci-app-nikki || true
-rm -rf package/small-package/luci-app-netdata || true
-rm -rf package/small-package/luci-app-poweroff || true
+[ -d "package/luci-app-netdata" ] && rm -rf package/small-package/luci-app-netdata || true
+[ -d "package/luci-app-poweroff" ] && rm -rf package/small-package/luci-app-poweroff || true
 rm -rf package/small-package/tcping || true
 rm -rf package/small-package/coremark || true
 
