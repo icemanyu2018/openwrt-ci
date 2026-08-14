@@ -58,12 +58,15 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-        # 强制检查配置文件是否存在，找不到直接抛出 Exit 1 终止流程
+        # 自动兼容根目录与 configs 目录下的配置文件
         if [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ]; then
           cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
           echo "成功应用配置文件: $CONFIG_FILE"
+        elif [ -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" ]; then
+          cp -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" .config
+          echo "成功应用配置文件: configs/$CONFIG_FILE"
         else
-          echo "致命错误: 未在仓库根目录找到 $CONFIG_FILE 配置文件！"
+          echo "致命错误: 未找到 $CONFIG_FILE 配置文件！"
           exit 1
         fi
 
@@ -84,18 +87,22 @@ jobs:
       id: package
       run: |
         cd openwrt
-        # 再次强制覆盖，防止 feeds install 重置配置
-        cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
+        # 再次覆盖配置以防 feeds install 变动
+        if [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ]; then
+          cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
+        elif [ -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" ]; then
+          cp -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" .config
+        fi
         
         make defconfig
         
-        # 核心卡点：检查 Target 是否依然为 x86，若异常则立刻终止
+        # 核心卡点：若 Target 被重置为 x86 则立刻终止
         TARGET_BOARD=$(grep "CONFIG_TARGET_BOARD=" .config | cut -d'"' -f2)
         echo "=========================================="
         echo "当前生成的 Target 架构为: $TARGET_BOARD"
         echo "=========================================="
         if [ "$TARGET_BOARD" = "x86" ]; then
-          echo "致命错误: 配置未生效，系统退回到了 x86！请检查 IPQ807X-WIFI.config 中的 Target 设置！"
+          echo "致命错误: 配置未生效，系统退回到了 x86！请检查 Target 设置！"
           exit 1
         fi
 
