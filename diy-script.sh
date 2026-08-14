@@ -100,7 +100,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复与冲突的包
+# 剔除 small-package 中重复与冲突的包（彻底清理 dae/vmlinux-btf 避免冲突）
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 [ -d "package/luci-app-nikki" ] && rm -rf package/small-package/luci-app-nikki || true
@@ -109,10 +109,10 @@ rm -rf package/small-package/luci-app-argon-config || true
 rm -rf package/small-package/tcping || true
 rm -rf package/small-package/coremark || true
 rm -rf package/small-package/vmlinux-btf || true
-
-# 彻底清除 dae / daed 中的 vmlinux-btf 和 bpf-headers 依赖定义
-find package/ -name "Makefile" -path "*/dae*/*" -exec sed -i 's/+vmlinux-btf//g' {} + 2>/dev/null || true
-find package/ -name "Makefile" -path "*/dae*/*" -exec sed -i 's/bpf-headers//g' {} + 2>/dev/null || true
+rm -rf package/small-package/dae || true
+rm -rf package/small-package/daed || true
+rm -rf package/small-package/luci-app-dae || true
+rm -rf package/small-package/luci-app-daed || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
@@ -120,16 +120,5 @@ find package/ -name "Makefile" -path "*/dae*/*" -exec sed -i 's/bpf-headers//g' 
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' 2>/dev/null || true
-
-# =========================================================
-# 6. 清理内核与 eBPF / Clang 修复
-# =========================================================
-rm -rf package/kernel/bpf-headers || true
-
-SYSTEM_CLANG=$(which clang 2>/dev/null || echo "/usr/bin/clang")
-
-if [ -f "include/bpf.mk" ]; then
-    sed -i "s|/invalid/clang|${SYSTEM_CLANG}|g" include/bpf.mk 2>/dev/null || true
-fi
 
 exit 0
