@@ -16,7 +16,7 @@
 [ -f "feeds/packages/utils/ttyd/files/ttyd.config" ] && sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config 2>/dev/null || true
 
 # =========================================================
-# 2. 首次启动 UCI 自动配置 (设置密码、Wi-Fi SSID)
+# 2. 首次启动 UCI 自动配置 (设置密码: 123456789、Wi-Fi SSID)
 # =========================================================
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
@@ -25,7 +25,9 @@ cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
 
 # 1. 设置默认 root 密码为: 123456789
 shadow_entry='root:$1$V44XV16Y$221.A8ESL322338.309071:17880:0:99999:7:::'
-[ -f "/etc/shadow" ] && sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
+if [ -f "/etc/shadow" ]; then
+    sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
+fi
 
 # 2. 遍历所有 wireless 接口设置默认 SSID (OWrt-5G / OWrt-2.4G) 并开启 Wi-Fi
 if command -v uci >/dev/null 2>&1; then
@@ -110,7 +112,6 @@ rm -rf package/small-package/coremark || true
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
 # =========================================================
-# 安全替换，加 -r 参数防止空查找抛出异常退出状态
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHCODELOAD/PKG_SOURCE_URL:=https:\/\/codeload.github.com/g' 2>/dev/null || true
@@ -126,5 +127,4 @@ if [ -f "include/bpf.mk" ]; then
     sed -i "s|/invalid/clang|${SYSTEM_CLANG}|g" include/bpf.mk 2>/dev/null || true
 fi
 
-# 显式返回 0，确保流程绝对顺畅通过
 exit 0
