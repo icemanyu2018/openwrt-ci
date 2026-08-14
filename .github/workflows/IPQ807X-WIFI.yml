@@ -8,7 +8,7 @@ env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
   REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: configs/ipq807x.config   # <--- 改为 configs/ipq807x.config
+  CONFIG_FILE: configs/ipq807x.config
   DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-script.sh
   UPLOAD_BIN_DIR: false
@@ -113,15 +113,27 @@ jobs:
       id: compile
       run: |
         cd openwrt
+        
+        # 1. 强制将系统的 clang/llvm 注入到 OpenWrt host 链
         mkdir -p staging_dir/host/bin
         ln -sf $(which clang) staging_dir/host/bin/clang
-        ln -sf $(which llvm-strap) staging_dir/host/bin/llvm-strap 2>/dev/null || true
+        ln -sf $(which clang++) staging_dir/host/bin/clang++
+        ln -sf $(which llvm-strip) staging_dir/host/bin/llvm-strip 2>/dev/null || true
+        ln -sf $(which llc) staging_dir/host/bin/llc 2>/dev/null || true
+        ln -sf $(which opt) staging_dir/host/bin/opt 2>/dev/null || true
+
+        # 2. 彻底杜绝 include/bpf.mk 判定失效
+        if [ -f "include/bpf.mk" ]; then
+          sed -i "s|/invalid/clang|$(which clang)|g" include/bpf.mk
+          sed -i "s|/invalid/llc|$(which llc)|g" include/bpf.mk 2>/dev/null || true
+        fi
         
         echo -e "$(nproc) thread compile"
         PATH="$(pwd)/staging_dir/host/bin:$PATH" \
-        KERNEL_BPF_CLANG="$(which clang)" \
         CLANG="$(which clang)" \
-        make -j$(nproc) || make -j1 V=s
+        LLC="$(which llc)" \
+        KERNEL_BPF_CLANG="$(which clang)" \
+        make -j$(nproc) CLANG="$(which clang)" LLC="$(which llc)" || make -j1 V=s
 
     - name: Check Space Usage(检查空间使用情况)
       if: (!cancelled())
