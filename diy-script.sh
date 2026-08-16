@@ -9,7 +9,7 @@
 [ -f "feeds/packages/utils/ttyd/files/ttyd.config" ] && sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config 2>/dev/null || true
 
 # =========================================================
-# 2. 首次启动 UCI 自动配置
+# 2. 首次启动 UCI 自动配置 (WiFi & Root 密码)
 # =========================================================
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
