@@ -99,7 +99,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复与冲突的旧包
+# 剔除 small-package 中重复、冲突与编译出错的包
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 rm -rf package/small-package/luci-app-netdata || true
@@ -111,6 +111,7 @@ rm -rf package/small-package/dae || true
 rm -rf package/small-package/daed || true
 rm -rf package/small-package/luci-app-dae || true
 rm -rf package/small-package/luci-app-daed || true
+rm -rf package/small-package/geoview || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
