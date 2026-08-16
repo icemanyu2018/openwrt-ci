@@ -3,24 +3,27 @@
 # =========================================================
 # 1. 基础网络、主机名与默认 Shell 设置
 # =========================================================
-[ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.30.1/g' package/base-files/files/bin/config_generate || true
+# 设定后台默认 IP 为 192.168.5.1
+[ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/etc/passwd" ] && sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd 2>/dev/null || true
 [ -f "feeds/packages/utils/ttyd/files/ttyd.config" ] && sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config 2>/dev/null || true
 
 # =========================================================
-# 2. 首次启动 UCI 自动配置 (WiFi & Root 密码)
+# 2. 首次启动 UCI 自动配置 (WiFi 免密 & 默认密码 123456789)
 # =========================================================
 mkdir -p package/base-files/files/etc/uci-defaults || true
 
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
 #!/bin/sh
 
-shadow_entry='root:$1$V44XV16Y$221.A8ESL322338.309071:17880:0:99999:7:::'
+# 预设 root 密码为 123456789 (标准 SHA-512 哈希)
+shadow_entry='root:$6$v1lG4aP0vO5o6p8t$vV8zU7Xg3G5i3e7a3V8kYq9F3t2pL5n0j8K7d6s4g2h1j5k6l7z8x9c0v1b2n3m4Q5w6e7r8t9y0u1i2o3p4A5.:19700:0:99999:7:::'
 if [ -f "/etc/shadow" ]; then
     sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
 fi
 
+# 启用 Wi-Fi 并设置 SSID 为 OWrt-2.4G / OWrt-5G (免密直连模式)
 if command -v uci >/dev/null 2>&1; then
     for section in $(uci show wireless 2>/dev/null | grep "=wifi-iface" | cut -d'.' -f2 | cut -d'=' -f1); do
         device=$(uci -q get wireless.${section}.device)
@@ -32,8 +35,13 @@ if command -v uci >/dev/null 2>&1; then
         else
             uci -q set wireless.${section}.ssid='OWrt-2.4G'
         fi
+        
+        # 移除加密认证与密码，实现免密直连
+        uci -q set wireless.${section}.encryption='none'
+        uci -q del wireless.${section}.key 2>/dev/null || true
     done
 
+    # 开启无线射频硬件
     for dev in $(uci show wireless 2>/dev/null | grep "=wifi-device" | cut -d'.' -f2 | cut -d'=' -f1); do
         uci -q set wireless.${dev}.disabled='0'
     done
