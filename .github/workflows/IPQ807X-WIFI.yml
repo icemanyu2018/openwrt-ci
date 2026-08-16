@@ -9,7 +9,6 @@ env:
   REPO_BRANCH: openwrt-24.10
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: configs/ipq807x.config
-  DIY_P1_SH: diy-part1.sh
   DIY_P2_SH: diy-script.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
@@ -22,7 +21,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v4
 
     - name: Initialization Environment(初始化环境)
       env:
@@ -49,7 +48,6 @@ jobs:
       run: |
         df -h $GITHUB_WORKSPACE
         git clone $REPO_URL -b $REPO_BRANCH openwrt
-        ln -sf $GITHUB_WORKSPACE/openwrt openwrt
 
     - name: Load Custom Configuration(加载自定义配置)
       run: |
@@ -58,7 +56,6 @@ jobs:
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
         
-        # 自动兼容根目录与 configs 目录下的配置文件
         if [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ]; then
           cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
           echo "成功应用配置文件: $CONFIG_FILE"
@@ -74,20 +71,16 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
-        # 拦截：在 install 之前清理官方 Feeds 中与 small-package 重叠的冲突包
-        rm -rf feeds/packages/net/mosdns || true
+        # 仅清理独立克隆的冲突包，保留官方源自带的 mosdns/smartdns
         rm -rf feeds/packages/net/msd_lite || true
-        rm -rf feeds/packages/net/smartdns || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
-        rm -rf feeds/luci/applications/luci-app-mosdns || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
         ./scripts/feeds install -a
 
-    - name: Download Package(下载软件包)
+    - name: Download Package(下载软件包 & 目标设备强校验)
       id: package
       run: |
         cd openwrt
-        # 再次覆盖配置以防 feeds install 变动
         if [ -f "$GITHUB_WORKSPACE/$CONFIG_FILE" ]; then
           cp -f "$GITHUB_WORKSPACE/$CONFIG_FILE" .config
         elif [ -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" ]; then
@@ -96,13 +89,21 @@ jobs:
         
         make defconfig
         
-        # 核心卡点：若 Target 被重置为 x86 则立刻终止
         TARGET_BOARD=$(grep "CONFIG_TARGET_BOARD=" .config | cut -d'"' -f2)
+        TARGET_DEV=$(grep "CONFIG_TARGET_qualcommax_ipq807x_DEVICE_" .config | grep "=y" || true)
+        
         echo "=========================================="
-        echo "当前生成的 Target 架构为: $TARGET_BOARD"
+        echo "目标架构: $TARGET_BOARD"
+        echo "生效设备: $TARGET_DEV"
         echo "=========================================="
+        
         if [ "$TARGET_BOARD" = "x86" ]; then
-          echo "致命错误: 配置未生效，系统退回到了 x86！请检查 Target 设置！"
+          echo "致命错误: Target 丢失，系统退回到了 x86！"
+          exit 1
+        fi
+
+        if ! echo "$TARGET_DEV" | grep -q "DEVICE_redmi_ax6=y"; then
+          echo "致命错误: 目标设备未能识别为 redmi_ax6（当前为 $TARGET_DEV）！终止编译防错！"
           exit 1
         fi
 
@@ -114,7 +115,6 @@ jobs:
       run: |
         cd openwrt
         
-        # 1. 强制将系统的 clang/llvm 注入到 OpenWrt host 链
         mkdir -p staging_dir/host/bin
         ln -sf $(which clang) staging_dir/host/bin/clang
         ln -sf $(which clang++) staging_dir/host/bin/clang++
@@ -122,7 +122,6 @@ jobs:
         ln -sf $(which llc) staging_dir/host/bin/llc 2>/dev/null || true
         ln -sf $(which opt) staging_dir/host/bin/opt 2>/dev/null || true
 
-        # 2. 彻底杜绝 include/bpf.mk 判定失效
         if [ -f "include/bpf.mk" ]; then
           sed -i "s|/invalid/clang|$(which clang)|g" include/bpf.mk
           sed -i "s|/invalid/llc|$(which llc)|g" include/bpf.mk 2>/dev/null || true
@@ -145,7 +144,7 @@ jobs:
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt
-        TARGET_DIR=$(find bin/targets/ -mindepth 2 -maxdepth 2 -type d 2>/dev/null | head -n 1)
+        TARGET_DIR=$(find bin/targets/qualcommax/ipq807x -mindepth 0 -maxdepth 0 -type d 2>/dev/null)
         if [ -n "$TARGET_DIR" ] && [ -d "$TARGET_DIR" ]; then
           rm -rf "$TARGET_DIR/packages" || true
           echo "FIRMWARE=$GITHUB_WORKSPACE/openwrt/$TARGET_DIR" >> $GITHUB_ENV
@@ -157,4 +156,4 @@ jobs:
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware_Redmi_AX6
-        path: openwrt/bin/targets/*/*
+        path: openwrt/bin/targets/qualcommax/ipq807x/*
