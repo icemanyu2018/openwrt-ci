@@ -71,7 +71,6 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
-        # 仅清理独立克隆的冲突包，保留官方源自带的 mosdns/smartdns
         rm -rf feeds/packages/net/msd_lite || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
@@ -107,7 +106,7 @@ jobs:
           exit 1
         fi
 
-        make download -j8
+        make download -j8 || make download -j1 V=s
         find dl -size -1024c -exec rm -f {} \;
 
     - name: Compile Firmware(开始编译固件)
@@ -132,7 +131,7 @@ jobs:
         CLANG="$(which clang)" \
         LLC="$(which llc)" \
         KERNEL_BPF_CLANG="$(which clang)" \
-        make -j$(nproc) CLANG="$(which clang)" LLC="$(which llc)" || make -j1 V=s
+        make -j$(nproc) CLANG="$(which clang)" LLC="$(which llc)" || make -j1 V=s CLANG="$(which clang)" LLC="$(which llc)"
 
     - name: Check Space Usage(检查空间使用情况)
       if: (!cancelled())
