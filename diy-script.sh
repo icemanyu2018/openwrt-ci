@@ -75,7 +75,7 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库 (独立精准拉取，杜绝 small-package 依赖死锁)
+# 4. 引入第三方核心仓库
 # =========================================================
 rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed package/luci-app-mosdns package/mosdns package/small-package || true
 
@@ -93,14 +93,11 @@ git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luc
 # 4. daed 官方源
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 5. MosDNS 独立稳定源 (不再依赖整个 small-package)
-git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns 2>/dev/null || true
-
-# 6. 稀疏克隆文件浏览器
+# 5. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
-# 5. 系统个性化与 Makefile 路径修正
+# 5. 系统个性化与 Makefile / Go 工具链修正
 # =========================================================
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
