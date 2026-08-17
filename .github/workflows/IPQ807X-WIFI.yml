@@ -38,7 +38,7 @@ jobs:
           libgmp-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libreadline-dev \
           libssl-dev libxml2-utils libz-dev lrzsz msmtp nano p7zip p7zip-full patch \
           pkgconf python3 python3-pip python3-ply python3-docutils qemu-utils rsync \
-          subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm golang
+          subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm
         sudo -E systemctl daemon-reload
         sudo -E apt-get -y autoremove --purge || true
         sudo -E apt-get -y clean
@@ -73,6 +73,8 @@ jobs:
         ./scripts/feeds update -a
         rm -rf feeds/packages/net/msd_lite || true
         rm -rf feeds/packages/net/geoview || true
+        rm -rf feeds/packages/net/v2ray-plugin || true
+        rm -rf feeds/packages/net/xray-plugin || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
         ./scripts/feeds install -a
@@ -132,8 +134,7 @@ jobs:
         CLANG="$(which clang)" \
         LLC="$(which llc)" \
         KERNEL_BPF_CLANG="$(which clang)" \
-        GOTOOLCHAIN=auto \
-        make -j$(nproc) CLANG="$(which clang)" LLC="$(which llc)" GOTOOLCHAIN=auto || make -j1 V=s CLANG="$(which clang)" LLC="$(which llc)" GOTOOLCHAIN=auto
+        make -j$(nproc) CLANG="$(which clang)" LLC="$(which llc)" || make -j1 V=s CLANG="$(which clang)" LLC="$(which llc)"
 
     - name: Check Space Usage(检查空间使用情况)
       if: (!cancelled())
