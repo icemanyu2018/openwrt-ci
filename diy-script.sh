@@ -88,9 +88,12 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 克隆 kenzok8/openwrt-daed
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 独立克隆 PassWall 与其核心二进制依赖（保证 xray-core / sing-box 为最新兼容版）
+# 独立克隆 PassWall 与其核心二进制依赖
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall 2>/dev/null || true
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages 2>/dev/null || true
+
+# 剔除 passwall-packages 中报错的 geoview
+rm -rf package/passwall-packages/geoview || true
 
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
