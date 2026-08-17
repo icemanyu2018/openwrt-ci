@@ -3,7 +3,6 @@
 # =========================================================
 # 1. 基础网络、主机名与默认 Shell 设置
 # =========================================================
-# 设定后台默认 IP 为 192.168.5.1
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/etc/passwd" ] && sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd 2>/dev/null || true
@@ -92,8 +91,10 @@ git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall 2>/dev/null || true
 git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages 2>/dev/null || true
 
-# 剔除 passwall-packages 中报错的 geoview
+# 彻底清理 passwall-packages 中的废弃/报错组件
 rm -rf package/passwall-packages/geoview || true
+rm -rf package/passwall-packages/v2ray-plugin || true
+rm -rf package/passwall-packages/xray-plugin || true
 
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
@@ -102,7 +103,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复、冲突以及 PassWall 相关的旧版二进制
+# 剔除 small-package 中重复、冲突与构建易报错的旧包
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 rm -rf package/small-package/luci-app-netdata || true
