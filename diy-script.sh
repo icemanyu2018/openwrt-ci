@@ -17,13 +17,11 @@ mkdir -p package/base-files/files/etc/uci-defaults || true
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
 #!/bin/sh
 
-# 预设 root 密码为 123456789 (标准 SHA-512 哈希)
 shadow_entry='root:$6$v1lG4aP0vO5o6p8t$vV8zU7Xg3G5i3e7a3V8kYq9F3t2pL5n0j8K7d6s4g2h1j5k6l7z8x9c0v1b2n3m4Q5w6e7r8t9y0u1i2o3p4A5.:19700:0:99999:7:::'
 if [ -f "/etc/shadow" ]; then
     sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
 fi
 
-# 启用 Wi-Fi 并设置 SSID 为 OWrt-2.4G / OWrt-5G (免密直连模式)
 if command -v uci >/dev/null 2>&1; then
     for section in $(uci show wireless 2>/dev/null | grep "=wifi-iface" | cut -d'.' -f2 | cut -d'=' -f1); do
         device=$(uci -q get wireless.${section}.device)
@@ -40,7 +38,6 @@ if command -v uci >/dev/null 2>&1; then
         uci -q del wireless.${section}.key 2>/dev/null || true
     done
 
-    # 启用无线射频
     for dev in $(uci show wireless 2>/dev/null | grep "=wifi-device" | cut -d'.' -f2 | cut -d'=' -f1); do
         uci -q set wireless.${dev}.disabled='0'
     done
@@ -78,54 +75,29 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库 & 解决包冲突
+# 4. 引入第三方核心仓库 (独立精准拉取，杜绝 small-package 依赖死锁)
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed package/luci-app-mosdns package/mosdns package/small-package || true
 
-# 独立克隆重点插件
+# 1. Argon 主题
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
+
+# 2. 关机与 Netdata 插件
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
 
-# 独立克隆 OpenClash 官方 master 分支
+# 3. OpenClash 官方 master 分支
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luci-app-openclash 2>/dev/null || true
 
-# 克隆 kenzok8/openwrt-daed
+# 4. daed 官方源
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 稀疏克隆文件浏览器
+# 5. MosDNS 独立稳定源 (不再依赖整个 small-package)
+git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns 2>/dev/null || true
+
+# 6. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
-
-# 引入 small-package 大合集 (用于拉取 mosdns 等工具)
-rm -rf package/small-package || true
-git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
-
-# 剔除 small-package 中重复、冲突与不需要的旧包
-rm -rf package/small-package/luci-theme-argon || true
-rm -rf package/small-package/luci-app-argon-config || true
-rm -rf package/small-package/luci-app-netdata || true
-rm -rf package/small-package/luci-app-poweroff || true
-rm -rf package/small-package/tcping || true
-rm -rf package/small-package/coremark || true
-rm -rf package/small-package/vmlinux-btf || true
-rm -rf package/small-package/dae || true
-rm -rf package/small-package/daed || true
-rm -rf package/small-package/luci-app-dae || true
-rm -rf package/small-package/luci-app-daed || true
-rm -rf package/small-package/geoview || true
-rm -rf package/small-package/v2ray* || true
-rm -rf package/small-package/xray* || true
-rm -rf package/small-package/sing-box || true
-rm -rf package/small-package/shadowsocks* || true
-rm -rf package/small-package/luci-app-passwall* || true
-rm -rf package/small-package/luci-app-openclash || true
-rm -rf package/small-package/luci-app-store || true
-rm -rf package/small-package/luci-app-quickstart || true
-rm -rf package/small-package/luci-app-lucky || true
-rm -rf package/small-package/lucky || true
-rm -rf package/small-package/luci-app-easytier || true
-rm -rf package/small-package/easytier || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
