@@ -77,7 +77,7 @@ function git_sparse_clone() {
 # =========================================================
 # 4. 引入第三方核心仓库 & 解决包冲突
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-nikki package/luci-app-nikki package/nikki || true
 
 # 独立克隆重点插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
@@ -85,8 +85,8 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/l
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
 
-# 克隆 kenzok8/openwrt-daed
-git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
+# 独立克隆 Nikki (Mihomo 客户端)
+git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki package/openwrt-nikki 2>/dev/null || true
 
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
@@ -95,7 +95,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复、冲突与 PassWall 全套旧版二进制
+# 剔除 small-package 中重复、冲突与无用的旧包
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 rm -rf package/small-package/luci-app-netdata || true
@@ -115,6 +115,9 @@ rm -rf package/small-package/xray* || true
 rm -rf package/small-package/sing-box || true
 rm -rf package/small-package/shadowsocks* || true
 rm -rf package/small-package/luci-app-passwall* || true
+rm -rf package/small-package/luci-app-nikki || true
+rm -rf package/small-package/nikki || true
+rm -rf package/small-package/mihomo || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
