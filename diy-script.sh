@@ -80,7 +80,7 @@ function git_sparse_clone() {
 # =========================================================
 # 4. 引入第三方核心仓库 & 解决包冲突
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed || true
 
 # 独立克隆重点插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
@@ -91,10 +91,13 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 独立克隆 OpenClash 官方 master 分支
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luci-app-openclash 2>/dev/null || true
 
+# 克隆 kenzok8/openwrt-daed
+git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
+
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
-# 引入 small-package 大合集
+# 引入 small-package 大合集 (用于拉取 mosdns 等工具)
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
@@ -111,8 +114,6 @@ rm -rf package/small-package/daed || true
 rm -rf package/small-package/luci-app-dae || true
 rm -rf package/small-package/luci-app-daed || true
 rm -rf package/small-package/geoview || true
-rm -rf package/small-package/mosdns || true
-rm -rf package/small-package/luci-app-mosdns || true
 rm -rf package/small-package/v2ray* || true
 rm -rf package/small-package/xray* || true
 rm -rf package/small-package/sing-box || true
