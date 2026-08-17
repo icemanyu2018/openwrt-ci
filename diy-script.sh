@@ -17,13 +17,11 @@ mkdir -p package/base-files/files/etc/uci-defaults || true
 cat << 'EOF' > package/base-files/files/etc/uci-defaults/99-custom-setup
 #!/bin/sh
 
-# 预设 root 密码为 123456789 (标准 SHA-512 哈希)
 shadow_entry='root:$6$v1lG4aP0vO5o6p8t$vV8zU7Xg3G5i3e7a3V8kYq9F3t2pL5n0j8K7d6s4g2h1j5k6l7z8x9c0v1b2n3m4Q5w6e7r8t9y0u1i2o3p4A5.:19700:0:99999:7:::'
 if [ -f "/etc/shadow" ]; then
     sed -i "s|^root:.*|${shadow_entry}|" /etc/shadow 2>/dev/null || true
 fi
 
-# 启用 Wi-Fi 并设置 SSID 为 OWrt-2.4G / OWrt-5G (免密直连模式)
 if command -v uci >/dev/null 2>&1; then
     for section in $(uci show wireless 2>/dev/null | grep "=wifi-iface" | cut -d'.' -f2 | cut -d'=' -f1); do
         device=$(uci -q get wireless.${section}.device)
@@ -79,7 +77,7 @@ function git_sparse_clone() {
 # =========================================================
 # 4. 引入第三方核心仓库 & 解决包冲突
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-passwall package/passwall-packages || true
 
 # 独立克隆重点插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
@@ -90,6 +88,10 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 克隆 kenzok8/openwrt-daed
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
+# 独立克隆 PassWall 与其核心二进制依赖（保证 xray-core / sing-box 为最新兼容版）
+git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall 2>/dev/null || true
+git clone --depth=1 https://github.com/xiaorouji/openwrt-passwall-packages package/passwall-packages 2>/dev/null || true
+
 # 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
@@ -97,7 +99,7 @@ git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebro
 rm -rf package/small-package || true
 git clone --depth=1 https://github.com/kenzok8/small-package.git package/small-package 2>/dev/null || true
 
-# 剔除 small-package 中重复、冲突与构建易报错的旧包
+# 剔除 small-package 中重复、冲突以及 PassWall 相关的旧版二进制
 rm -rf package/small-package/luci-theme-argon || true
 rm -rf package/small-package/luci-app-argon-config || true
 rm -rf package/small-package/luci-app-netdata || true
@@ -114,6 +116,11 @@ rm -rf package/small-package/mosdns || true
 rm -rf package/small-package/luci-app-mosdns || true
 rm -rf package/small-package/v2ray-plugin || true
 rm -rf package/small-package/xray-plugin || true
+rm -rf package/small-package/xray-core || true
+rm -rf package/small-package/v2ray-core || true
+rm -rf package/small-package/sing-box || true
+rm -rf package/small-package/luci-app-passwall || true
+rm -rf package/small-package/luci-app-passwall2 || true
 
 # =========================================================
 # 5. 系统个性化与 Makefile 路径修正
