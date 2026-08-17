@@ -77,6 +77,7 @@ jobs:
         rm -rf feeds/packages/net/xray-plugin || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
+        rm -rf feeds/luci/applications/luci-app-nikki || true
         ./scripts/feeds install -a
 
     - name: Download Package(下载软件包 & 目标设备强校验)
