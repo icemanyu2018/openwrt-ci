@@ -3,6 +3,7 @@
 # =========================================================
 # 1. 基础网络、主机名与默认 Shell 设置
 # =========================================================
+# 设定后台默认 IP 为 192.168.5.1
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/etc/passwd" ] && sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd 2>/dev/null || true
@@ -74,12 +75,11 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库 (清理报错源，使用官方自带 mosdns)
+# 4. 引入第三方核心仓库 (独立精准拉取)
 # =========================================================
-# 彻底清理自定义目录中的冲突包和导致报错的旧 mosdns
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed package/luci-app-mosdns package/mosdns package/small-package || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-homeproxy package/luci-app-openclash package/luci-app-mosdns package/mosdns package/small-package || true
 
-# 1. Argon 主题与设置
+# 1. Argon 主题与配置插件 (支持定时自动壁纸)
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 
@@ -87,17 +87,14 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/l
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
 
-# 3. OpenClash 官方 master 分支
-git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luci-app-openclash 2>/dev/null || true
-
-# 4. daed 官方源
+# 3. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 5. 稀疏克隆文件浏览器
+# 4. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
-# 5. Makefile 路径规范化
+# 5. 系统个性化与 Makefile 路径修正
 # =========================================================
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
