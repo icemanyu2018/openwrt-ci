@@ -3,7 +3,6 @@
 # =========================================================
 # 1. 基础网络、主机名与默认 Shell 设置
 # =========================================================
-# 设定后台默认 IP 为 192.168.5.1
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/192.168.1.1/192.168.5.1/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/bin/config_generate" ] && sed -i 's/ImmortalWrt/Redmi-AX6/g' package/base-files/files/bin/config_generate || true
 [ -f "package/base-files/files/etc/passwd" ] && sed -i 's/\/bin\/ash/\/usr\/bin\/zsh/g' package/base-files/files/etc/passwd 2>/dev/null || true
@@ -75,15 +74,16 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库
+# 4. 引入第三方核心仓库 (清理报错源，使用官方自带 mosdns)
 # =========================================================
+# 彻底清理自定义目录中的冲突包和导致报错的旧 mosdns
 rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-openclash package/luci-app-openclash package/openwrt-daed package/luci-app-mosdns package/mosdns package/small-package || true
 
-# 1. Argon 主题
+# 1. Argon 主题与设置
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 
-# 2. 关机与 Netdata 插件
+# 2. 关机与 Netdata
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
 
@@ -97,7 +97,7 @@ git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
-# 5. 系统个性化与 Makefile / Go 工具链修正
+# 5. Makefile 路径规范化
 # =========================================================
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
