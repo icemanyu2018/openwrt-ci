@@ -80,7 +80,7 @@ jobs:
         rm -rf feeds/luci/applications/luci-app-openclash || true
         ./scripts/feeds install -a
 
-        # 解锁 Go 编译链限制
+        # 解锁 Go 自动工具链
         find feeds/ -type f -name "golang-package.mk" 2>/dev/null | xargs -r sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' 2>/dev/null || true
         find package/ -type f -name "golang-package.mk" 2>/dev/null | xargs -r sed -i 's/GOTOOLCHAIN=local/GOTOOLCHAIN=auto/g' 2>/dev/null || true
 
