@@ -71,12 +71,17 @@ jobs:
       run: |
         cd openwrt
         ./scripts/feeds update -a
+        
+        # 彻底移除 feeds 中下载失效或冲突的包
+        rm -rf feeds/packages/net/smartdns || true
+        rm -rf feeds/luci/applications/luci-app-smartdns || true
         rm -rf feeds/packages/net/msd_lite || true
         rm -rf feeds/packages/net/geoview || true
         rm -rf feeds/packages/net/v2ray-plugin || true
         rm -rf feeds/packages/net/xray-plugin || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
+        
         ./scripts/feeds install -a
 
         # 解锁 Go 自动工具链
