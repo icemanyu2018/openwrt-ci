@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/immortalwrt/immortalwrt
-  REPO_BRANCH: openwrt-24.10
+  REPO_URL: https://github.com/VIKINGYFY/immortalwrt
+  REPO_BRANCH: main
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: configs/ipq807x.config
   DIY_P2_SH: diy-script.sh
@@ -77,7 +77,6 @@ jobs:
         rm -rf feeds/packages/net/xray-plugin || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
-        rm -rf feeds/luci/applications/luci-app-openclash || true
         ./scripts/feeds install -a
 
         # 解锁 Go 自动工具链
