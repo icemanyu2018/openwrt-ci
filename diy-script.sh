@@ -75,11 +75,11 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库 & 修复失效包
+# 4. 引入第三方核心仓库
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-smartdns package/smartdns || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-adguardhome || true
 
-# 1. Argon 主题与配置插件
+# 1. Argon 主题与配置插件 (支持定时自动壁纸)
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 
@@ -90,9 +90,8 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 3. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 4. SmartDNS 官方稳定源码
-git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
-git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
+# 4. AdGuard Home 控制面板
+git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome 2>/dev/null || true
 
 # 5. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
