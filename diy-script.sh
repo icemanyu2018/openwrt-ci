@@ -75,11 +75,11 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库 (独立精准拉取)
+# 4. 引入第三方核心仓库 & 修复失效包
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-homeproxy package/luci-app-openclash package/luci-app-mosdns package/mosdns package/small-package || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-smartdns package/smartdns || true
 
-# 1. Argon 主题与配置插件 (支持定时自动壁纸)
+# 1. Argon 主题与配置插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 
@@ -90,7 +90,11 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 3. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 4. 稀疏克隆文件浏览器
+# 4. 修复 smartdns（从官方库拉取最新可用源码包覆盖失效源）
+git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
+git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
+
+# 5. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
