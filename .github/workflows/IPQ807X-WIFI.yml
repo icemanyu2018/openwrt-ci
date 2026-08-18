@@ -72,15 +72,18 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         
-        # 彻底移除 feeds 中下载失效或冲突的包
+        # 彻底移除 feeds 中可能发生冲突或失效的包
         rm -rf feeds/packages/net/smartdns || true
         rm -rf feeds/luci/applications/luci-app-smartdns || true
+        rm -rf feeds/packages/net/adguardhome || true
+        rm -rf feeds/luci/applications/luci-app-adguardhome || true
         rm -rf feeds/packages/net/msd_lite || true
         rm -rf feeds/packages/net/geoview || true
         rm -rf feeds/packages/net/v2ray-plugin || true
         rm -rf feeds/packages/net/xray-plugin || true
         rm -rf feeds/luci/themes/luci-theme-argon || true
         rm -rf feeds/luci/applications/luci-app-netdata || true
+        rm -rf feeds/luci/applications/luci-app-openclash || true
         
         ./scripts/feeds install -a
 
@@ -97,6 +100,11 @@ jobs:
         elif [ -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" ]; then
           cp -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" .config
         fi
+        
+        # 强制纠偏 wpad 变体，防止被插件依赖误篡改
+        echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
+        echo "# CONFIG_PACKAGE_wpad-full-openssl is not set" >> .config
+        echo "# CONFIG_PACKAGE_wpad-basic-openssl is not set" >> .config
         
         make defconfig
         
