@@ -90,7 +90,7 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 3. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 4. 修复 smartdns（从官方库拉取最新可用源码包覆盖失效源）
+# 4. SmartDNS 官方稳定源码
 git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
 git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
 
