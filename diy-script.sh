@@ -52,9 +52,8 @@ chmod +x package/base-files/files/etc/uci-defaults/99-custom-setup || true
 [ -f "package/kernel/mac80211/files/lib/wifi/mac80211.sh" ] && sed -i 's/ssid=OpenWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
 
 # =========================================================
-# 3. 修复 hostapd 补丁冲突
+# 3. 修复 hostapd 补丁冲突 (关键修复点)
 # =========================================================
-# 删除导致 Hunk FAILED 的 602 补丁
 rm -f package/network/services/hostapd/patches/602-nl80211-short-circuit-use-existing-iface.patch || true
 
 # =========================================================
