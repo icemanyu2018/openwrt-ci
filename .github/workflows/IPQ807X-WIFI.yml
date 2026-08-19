@@ -27,19 +27,19 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        # 1. 仅物理释放磁盘空间，保留系统原有的软件源配置
+        # 1. 物理释放磁盘空间
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /opt/az $AGENT_TOOLSDIRECTORY || true
         
-        # 2. 正常更新软件源并安装依赖
+        # 2. 仅安装编译必需依赖 (剔除 texlive 等臃肿文档包，秒级完成)
         sudo -E apt-get -y update
         sudo -E apt-get -y install \
-          ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          ack antlr3 autoconf automake autopoint binutils bison build-essential \
           bzip2 ccache cmake cpio curl device-tree-compiler fastjar flex gawk gettext \
           gcc-multilib g++-multilib git haveged help2man libc6-dev-i386 libglib2.0-dev \
           libgmp-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libreadline-dev \
           libssl-dev libxml2-utils libz-dev lrzsz msmtp nano p7zip p7zip-full patch \
-          pkgconf python3 python3-pip python3-ply python3-docutils qemu-utils rsync \
-          subversion swig texinfo u-boot-tools unzip upx-ucl xmlto zlib1g-dev clang llvm golang
+          pkgconf python3 python3-pip python3-ply qemu-utils rsync subversion swig \
+          u-boot-tools unzip upx-ucl zlib1g-dev clang llvm golang
         
         sudo timedatectl set-timezone "$TZ"
 
@@ -100,7 +100,7 @@ jobs:
           cp -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" .config
         fi
         
-        # 强制注入 wpad-openssl，规避无线冲突
+        # 强制注入 wpad-openssl，规避无线驱动冲突
         echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
         echo "# CONFIG_PACKAGE_wpad-full-openssl is not set" >> .config
         echo "# CONFIG_PACKAGE_wpad-basic-openssl is not set" >> .config
