@@ -106,11 +106,7 @@ git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome packag
 # 6. MosDNS
 git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns 2>/dev/null || true
 
-# 7. SmartDNS (官方稳定源码)
-git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
-git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
-
-# 8. 稀疏克隆文件浏览器
+# 7. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
