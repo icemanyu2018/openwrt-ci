@@ -71,7 +71,9 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         
-        # 仅清理被外部自定义仓库覆盖的组件，保留官方源稳定的 smartdns
+        # 彻底移除 feeds 中可能发生命名冲突或下载死锁的旧包
+        rm -rf feeds/packages/net/smartdns || true
+        rm -rf feeds/luci/applications/luci-app-smartdns || true
         rm -rf feeds/packages/net/mosdns || true
         rm -rf feeds/luci/applications/luci-app-mosdns || true
         rm -rf feeds/packages/net/adguardhome || true
