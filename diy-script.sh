@@ -100,19 +100,13 @@ git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luc
 # 4. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 5. AdGuard Home 控制面板
+# 5. AdGuard Home 面板
 git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome 2>/dev/null || true
 
-# 6. MosDNS (支持 v5 核心构建)
+# 6. MosDNS
 git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns 2>/dev/null || true
 
-# 7. SmartDNS (采用兼容稳定源码库)
-git clone --depth=1 https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
-git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
-# 修正 SmartDNS Makefile 内部编译变量防止报错
-[ -f "package/smartdns/Makefile" ] && sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' package/smartdns/Makefile 2>/dev/null || true
-
-# 8. 稀疏克隆文件浏览器
+# 7. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
