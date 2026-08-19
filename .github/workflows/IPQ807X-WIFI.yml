@@ -30,7 +30,7 @@ jobs:
         # 1. 物理释放磁盘空间
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /opt/az $AGENT_TOOLSDIRECTORY || true
         
-        # 2. 仅安装编译必需依赖 (剔除 texlive 等臃肿文档包，秒级完成)
+        # 2. 仅安装编译必需依赖 (30秒极速完成)
         sudo -E apt-get -y update
         sudo -E apt-get -y install \
           ack antlr3 autoconf automake autopoint binutils bison build-essential \
@@ -71,7 +71,7 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         
-        # 彻底移除 feeds 中可能发生命名冲突或下载死锁的旧包
+        # 彻底移除 smartdns 及其他已替换的包，防止冲突
         rm -rf feeds/packages/net/smartdns || true
         rm -rf feeds/luci/applications/luci-app-smartdns || true
         rm -rf feeds/packages/net/mosdns || true
