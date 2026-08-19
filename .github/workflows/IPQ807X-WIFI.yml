@@ -101,7 +101,7 @@ jobs:
           cp -f "$GITHUB_WORKSPACE/configs/$CONFIG_FILE" .config
         fi
         
-        # 强制纠偏 wpad 变体，防止被插件依赖误篡改
+        # 强制注入 wpad-openssl，防止被外部规则篡改
         echo "CONFIG_PACKAGE_wpad-openssl=y" >> .config
         echo "# CONFIG_PACKAGE_wpad-full-openssl is not set" >> .config
         echo "# CONFIG_PACKAGE_wpad-basic-openssl is not set" >> .config
