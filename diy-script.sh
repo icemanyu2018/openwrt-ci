@@ -52,7 +52,7 @@ chmod +x package/base-files/files/etc/uci-defaults/99-custom-setup || true
 [ -f "package/kernel/mac80211/files/lib/wifi/mac80211.sh" ] && sed -i 's/ssid=OpenWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
 
 # =========================================================
-# 3. 修复 hostapd 补丁冲突 (关键修复点)
+# 3. 修复 hostapd 补丁冲突
 # =========================================================
 rm -f package/network/services/hostapd/patches/602-nl80211-short-circuit-use-existing-iface.patch || true
 
@@ -82,9 +82,11 @@ function git_sparse_clone() {
 # =========================================================
 # 5. 引入第三方核心仓库
 # =========================================================
-rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-adguardhome || true
+rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata \
+       package/openwrt-daed package/luci-app-adguardhome package/luci-app-openclash \
+       package/luci-app-mosdns package/mosdns package/luci-app-smartdns package/smartdns || true
 
-# 1. Argon 主题与配置插件 (支持定时自动壁纸)
+# 1. Argon 主题与配置插件
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon package/luci-theme-argon 2>/dev/null || true
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/luci-app-argon-config 2>/dev/null || true
 
@@ -92,13 +94,23 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/l
 git clone --depth=1 https://github.com/esirplayground/luci-app-poweroff package/luci-app-poweroff 2>/dev/null || true
 git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-app-netdata 2>/dev/null || true
 
-# 3. daed (eBPF 透明代理)
+# 3. OpenClash
+git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luci-app-openclash 2>/dev/null || true
+
+# 4. daed (eBPF 透明代理)
 git clone --depth=1 https://github.com/kenzok8/openwrt-daed package/openwrt-daed 2>/dev/null || true
 
-# 4. AdGuard Home 控制面板
+# 5. AdGuard Home 面板
 git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome 2>/dev/null || true
 
-# 5. 稀疏克隆文件浏览器
+# 6. MosDNS
+git clone --depth=1 https://github.com/sbwml/luci-app-mosdns package/luci-app-mosdns 2>/dev/null || true
+
+# 7. SmartDNS (官方稳定源码)
+git clone --depth=1 -b lede https://github.com/pymumu/luci-app-smartdns package/luci-app-smartdns 2>/dev/null || true
+git clone --depth=1 https://github.com/pymumu/openwrt-smartdns package/smartdns 2>/dev/null || true
+
+# 8. 稀疏克隆文件浏览器
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
