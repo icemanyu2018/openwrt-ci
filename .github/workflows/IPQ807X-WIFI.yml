@@ -27,10 +27,13 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        # 1. 物理极速腾挪空间 (秒级释放 20GB+，不再使用缓慢的 apt purge)
+        # 1. 秒级物理腾挪空间，彻底废除卡顿的 apt purge
         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost /opt/az $AGENT_TOOLSDIRECTORY || true
         
-        # 2. 仅更新并安装必要编译工具链
+        # 2. 移除阻碍 apt update 的外部慢速软件源
+        sudo rm -rf /etc/apt/sources.list.d/* /etc/apt/sources.list.d || true
+        
+        # 3. 仅更新并安装必要编译依赖
         sudo -E apt-get -y update
         sudo -E apt-get -y install \
           ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
