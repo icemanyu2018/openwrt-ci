@@ -52,7 +52,13 @@ chmod +x package/base-files/files/etc/uci-defaults/99-custom-setup || true
 [ -f "package/kernel/mac80211/files/lib/wifi/mac80211.sh" ] && sed -i 's/ssid=OpenWrt/ssid=OWrt-2.4G/g' package/kernel/mac80211/files/lib/wifi/mac80211.sh 2>/dev/null || true
 
 # =========================================================
-# 3. 安全稀疏克隆函数
+# 3. 修复 hostapd 补丁冲突
+# =========================================================
+# 删除导致 Hunk FAILED 的 602 补丁
+rm -f package/network/services/hostapd/patches/602-nl80211-short-circuit-use-existing-iface.patch || true
+
+# =========================================================
+# 4. 安全稀疏克隆函数
 # =========================================================
 function git_sparse_clone() {
   local branch="$1" repourl="$2" && shift 2
@@ -75,7 +81,7 @@ function git_sparse_clone() {
 }
 
 # =========================================================
-# 4. 引入第三方核心仓库
+# 5. 引入第三方核心仓库
 # =========================================================
 rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata package/openwrt-daed package/luci-app-adguardhome || true
 
@@ -97,7 +103,7 @@ git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome packag
 git_sparse_clone main https://github.com/Lienol/openwrt-package luci-app-filebrowser
 
 # =========================================================
-# 5. 系统个性化与 Makefile 路径修正
+# 6. 系统个性化与 Makefile 路径修正
 # =========================================================
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/..\/..\/luci.mk/$(TOPDIR)\/feeds\/luci\/luci.mk/g' 2>/dev/null || true
 find package/ -type f -name "Makefile" 2>/dev/null | xargs -r sed -i 's/PKG_SOURCE_URL:=@GHREPO/PKG_SOURCE_URL:=https:\/\/github.com/g' 2>/dev/null || true
