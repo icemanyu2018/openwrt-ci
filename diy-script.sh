@@ -83,7 +83,7 @@ function git_sparse_clone() {
 # 5. 引入第三方核心仓库
 # =========================================================
 rm -rf package/luci-theme-argon package/luci-app-argon-config package/luci-app-poweroff package/luci-app-netdata \
-       package/daed package/luci-app-daed package/openwrt-daed package/luci-app-adguardhome package/luci-app-openclash \
+       package/luci-app-nikki package/nikki package/mihomo package/luci-app-adguardhome package/luci-app-openclash \
        package/luci-app-mosdns package/mosdns package/luci-app-smartdns package/smartdns || true
 
 # 1. Argon 主题与配置插件
@@ -97,13 +97,8 @@ git clone --depth=1 https://github.com/Jason6111/luci-app-netdata package/luci-a
 # 3. OpenClash
 git clone --depth=1 -b master https://github.com/vernesong/OpenClash package/luci-app-openclash 2>/dev/null || true
 
-# 4. daed (精确定位源码并平铺，确保 make defconfig 能够正确识别包名)
-git clone --depth=1 https://github.com/QiuSimons/openwrt-daed package/daed-repo 2>/dev/null || true
-if [ -d "package/daed-repo" ]; then
-  cp -rf package/daed-repo/daed package/daed 2>/dev/null || true
-  cp -rf package/daed-repo/luci-app-daed package/luci-app-daed 2>/dev/null || true
-  rm -rf package/daed-repo || true
-fi
+# 4. Nikki (Mihomo 原生支持)
+git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki package/luci-app-nikki 2>/dev/null || git clone --depth=1 https://github.com/morytyann/OpenWrt-nikki package/luci-app-nikki 2>/dev/null || true
 
 # 5. AdGuard Home 面板
 git clone --depth=1 https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome 2>/dev/null || true
