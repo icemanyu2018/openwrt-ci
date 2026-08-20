@@ -71,10 +71,10 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         
-        # 彻底移除 smartdns、daed 及冲突包，防止覆盖
+        # 彻底移除可能冲突或被自定义包覆盖的定义
         rm -rf feeds/packages/net/smartdns || true
         rm -rf feeds/luci/applications/luci-app-smartdns || true
-        rm -rf feeds/packages/net/daed feeds/luci/applications/luci-app-daed || true
+        rm -rf feeds/packages/net/nikki feeds/luci/applications/luci-app-nikki feeds/packages/net/mihomo || true
         rm -rf feeds/packages/net/mosdns || true
         rm -rf feeds/luci/applications/luci-app-mosdns || true
         rm -rf feeds/packages/net/adguardhome || true
